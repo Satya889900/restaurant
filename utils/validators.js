@@ -1,29 +1,34 @@
+// 🧩 validators.js
+
 /**
- * Check if a string is a valid email
+ * ✅ Validate if a string is a properly formatted email address
  * @param {string} email
  * @returns {boolean}
  */
-const isValidEmail = (email) => {
-  const regex = /^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/;
-  return regex.test(email);
+export const isValidEmail = (email) => {
+  if (typeof email !== "string") return false;
+  // More robust regex covering subdomains and modern TLDs
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  return regex.test(email.trim());
 };
 
 /**
- * Check if a password meets minimum requirements
+ * 🔐 Validate if a password meets strength requirements
+ * Default rule: minimum 6 chars, includes at least one letter and one number
  * @param {string} password
  * @returns {boolean}
  */
-const isValidPassword = (password) => {
-  return typeof password === 'string' && password.length >= 6;
+export const isValidPassword = (password) => {
+  if (typeof password !== "string") return false;
+  const strongPasswordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d!@#$%^&*()_+\-=]{6,}$/;
+  return strongPasswordRegex.test(password);
 };
 
 /**
- * Check if a number is a positive integer
+ * 🔢 Validate if a number is a positive integer
  * @param {number} num
  * @returns {boolean}
  */
-const isPositiveNumber = (num) => {
-  return Number.isInteger(num) && num > 0;
+export const isPositiveNumber = (num) => {
+  return typeof num === 'number' && Number.isFinite(num) && Number.isInteger(num) && num > 0;
 };
-
-module.exports = { isValidEmail, isValidPassword, isPositiveNumber };
