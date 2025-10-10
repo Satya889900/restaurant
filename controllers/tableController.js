@@ -40,13 +40,18 @@ export const getTables = asyncHandler(async (req, res) => {
     { $set: { status: "completed" } }
   );
 
+  // Assume a booking is for a 2-hour duration for availability check
+  const newBookingStartTime = checkTime;
+  const newBookingEndTime = new Date(newBookingStartTime.getTime() + 2 * 60 * 60 * 1000);
+
   const tables = await Table.find().sort("tableNumber");
 
-  // Find active bookings overlapping selected date/time
+  // Find any existing bookings that overlap with the potential new booking time range.
+  // An overlap occurs if (StartA < EndB) and (EndA > StartB).
   const activeBookings = await Booking.find({
     status: "booked",
-    startTime: { $lt: checkTime },
-    endTime: { $gt: checkTime },
+    startTime: { $lt: newBookingEndTime },
+    endTime: { $gt: newBookingStartTime },
   }).select("table");
 
   const bookedTableIds = activeBookings.map((b) => b.table.toString());

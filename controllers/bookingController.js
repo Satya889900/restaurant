@@ -37,28 +37,45 @@ export const createBooking = asyncHandler(async (req, res) => {
     status: "booked",
   });
 
-  // Send email confirmation
-  try {
-    const userEmail = req.user.email; // logged-in user's email
-    console.log("📨 Sending booking confirmation to:", userEmail);
+  // After booking, re-fetch all tables with updated availability for the same time slot
+  const checkTime = s;
+  const newBookingEndTime = new Date(checkTime.getTime() + 2 * 60 * 60 * 1000);
 
-    await sendEmail({
-      to: userEmail,
-      subject: "🍽️ Booking Confirmed",
-      text: `Your booking for table ${table.tableNumber} is confirmed from ${s.toLocaleString()} to ${e.toLocaleString()}.`,
-      html: `
+  const allTables = await Table.find().sort("tableNumber");
+  const activeBookings = await Booking.find({
+    status: "booked",
+    startTime: { $lt: newBookingEndTime },
+    endTime: { $gt: checkTime },
+  }).select("table");
+
+  const bookedTableIds = activeBookings.map((b) => b.table.toString());
+  const tablesWithStatus = allTables.map((t) => ({
+    ...t.toObject(),
+    available: !bookedTableIds.includes(t._id.toString()),
+  }));
+
+  res.status(201).json({ message: "Booking created successfully", tables: tablesWithStatus });
+
+  // Send email confirmation in the background
+  const userEmail = req.user.email; // logged-in user's email
+  sendEmail({
+    to: userEmail,
+    subject: "🍽️ Booking Confirmed",
+    text: `Your booking for table ${table.tableNumber} is confirmed from ${s.toLocaleString()} to ${e.toLocaleString()}.`,
+    html: `
         <h2>🍽️ Booking Confirmed</h2>
         <p><strong>Table:</strong> ${table.tableNumber}</p>
         <p><strong>From:</strong> ${s.toLocaleString()}</p>
         <p><strong>To:</strong> ${e.toLocaleString()}</p>
         <p>Thank you for booking with us!</p>
       `,
-    });
-  } catch (err) {
+  })
+    .then(() => {
+      console.log("📨 Booking confirmation sent to:", userEmail);
+    })
+    .catch((err) => {
     console.warn("⚠️ Booking email not sent:", err.message);
-  }
-
-  res.status(201).json({ message: "Booking created successfully", booking });
+    });
 });
 
 // @desc   Get logged-in user's bookings
@@ -85,26 +102,43 @@ export const cancelBooking = asyncHandler(async (req, res) => {
   booking.status = "cancelled";
   await booking.save();
 
-  // Send cancellation email
-  try {
-    const userEmail = req.user.email;
-    console.log("📨 Sending booking cancellation to:", userEmail);
+  // After cancelling, re-fetch all tables with updated availability for the original time slot
+  const checkTime = booking.startTime;
+  const bookingEndTime = new Date(checkTime.getTime() + 2 * 60 * 60 * 1000);
 
-    await sendEmail({
-      to: userEmail,
-      subject: "❌ Booking Cancelled",
-      text: `Your booking for table ${booking.table.tableNumber} from ${booking.startTime.toLocaleString()} to ${booking.endTime.toLocaleString()} has been cancelled.`,
-      html: `
+  const allTables = await Table.find().sort("tableNumber");
+  const activeBookings = await Booking.find({
+    status: "booked",
+    startTime: { $lt: bookingEndTime },
+    endTime: { $gt: checkTime },
+  }).select("table");
+
+  const bookedTableIds = activeBookings.map((b) => b.table.toString());
+  const tablesWithStatus = allTables.map((t) => ({
+    ...t.toObject(),
+    available: !bookedTableIds.includes(t._id.toString()),
+  }));
+
+  res.json({ message: "Booking cancelled", tables: tablesWithStatus });
+
+  // Send cancellation email in the background
+  const userEmail = req.user.email;
+  sendEmail({
+    to: userEmail,
+    subject: "❌ Booking Cancelled",
+    text: `Your booking for table ${booking.table.tableNumber} from ${booking.startTime.toLocaleString()} to ${booking.endTime.toLocaleString()} has been cancelled.`,
+    html: `
         <h2>❌ Booking Cancelled</h2>
         <p><strong>Table:</strong> ${booking.table.tableNumber}</p>
         <p><strong>From:</strong> ${booking.startTime.toLocaleString()}</p>
         <p><strong>To:</strong> ${booking.endTime.toLocaleString()}</p>
         <p>We hope to see you again soon.</p>
       `,
+  })
+    .then(() => {
+      console.log("📨 Booking cancellation sent to:", userEmail);
+    })
+    .catch((err) => {
+      console.warn("⚠️ Cancellation email not sent:", err.message);
     });
-  } catch (err) {
-    console.warn("⚠️ Cancellation email not sent:", err.message);
-  }
-
-  res.json({ message: "Booking cancelled", booking });
 });
