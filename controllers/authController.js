@@ -1,11 +1,10 @@
 import asyncHandler from "express-async-handler";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import User from "../models/User.js ";
+import User from "../models/User.js";
 
-
-// Generate JWT token
-export const generateToken = (id) => {
+// ✅ Generate JWT token
+const generateToken = (id) => {
   return jwt.sign(
     { id },
     process.env.JWT_SECRET,
@@ -13,55 +12,79 @@ export const generateToken = (id) => {
   );
 };
 
-// @desc   Register new user
-// @route  POST /api/auth/register
-// @access Public
+// ✅ @desc   Register new user
+// ✅ @route  POST /api/auth/register
+// ✅ @access Public
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password, role } = req.body;
 
+  // 1️⃣ Validate fields
   if (!name || !email || !password) {
-    return res.status(400).json({ message: "Please provide all fields" });
+    res.status(400);
+    throw new Error("Please provide all fields");
   }
 
+  // 2️⃣ Check if user exists
   const userExists = await User.findOne({ email });
   if (userExists) {
-    return res.status(400).json({ message: "User already exists" });
+    res.status(400);
+    throw new Error("User already exists");
   }
 
+  // 3️⃣ Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  // 4️⃣ Create user (allow role only if explicitly passed)
   const user = await User.create({
     name,
     email,
     password: hashedPassword,
-    role: role || "user",
+    role: role && ["admin", "user"].includes(role) ? role : "user",
   });
 
-  res.status(201).json({
-    user: {
-      id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-    token: generateToken(user._id),
-  });
+  if (user) {
+    res.status(201).json({
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      token: generateToken(user._id),
+    });
+  } else {
+    res.status(400);
+    throw new Error("Invalid user data");
+  }
 });
 
-// @desc   Login user
-// @route  POST /api/auth/login
-// @access Public
+// ✅ @desc   Login user
+// ✅ @route  POST /api/auth/login
+// ✅ @access Public
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password)
-    return res.status(400).json({ message: "Please provide email & password" });
 
+  // 1️⃣ Basic validation
+  if (!email || !password) {
+    res.status(400);
+    throw new Error("Please provide email & password");
+  }
+
+  // 2️⃣ Check if user exists
   const user = await User.findOne({ email });
-  if (!user) return res.status(401).json({ message: "Invalid credentials" });
+  if (!user) {
+    res.status(401);
+    throw new Error("Invalid credentials");
+  }
 
+  // 3️⃣ Compare password
   const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) return res.status(401).json({ message: "Invalid credentials" });
+  if (!isMatch) {
+    res.status(401);
+    throw new Error("Invalid credentials");
+  }
 
+  // 4️⃣ Success response
   res.json({
     user: {
       id: user._id,
@@ -73,10 +96,16 @@ export const login = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc   Get logged-in user info
-// @route  GET /api/auth/me
-// @access Private
+// ✅ @desc   Get logged-in user info
+// ✅ @route  GET /api/auth/me
+// ✅ @access Private
 export const getMe = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user.id).select("-password");
+
+  if (!user) {
+    res.status(404);
+    throw new Error("User not found");
+  }
+
   res.json(user);
 });

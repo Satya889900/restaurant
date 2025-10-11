@@ -1,50 +1,43 @@
-import dotenv from 'dotenv';
+import express from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+import connectDB from "./config/db.js";
+import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
+
+import tableRoutes from "./routes/tableRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
+import authRoutes from "./routes/authRoutes.js";
+
 dotenv.config();
 
-import express from 'express';
-import cors from 'cors';
-import morgan from 'morgan';
-
-// Database
-import connectDB from './config/db.js';
-
-// Routes
-import authRoutes from './routes/authRoutes.js';
-import tableRoutes from './routes/tableRoutes.js';
-import bookingRoutes from './routes/bookingRoutes.js';
-
-// Middleware
-import { errorHandler } from './middleware/errorHandler.js';
+connectDB();
 
 const app = express();
 
-// Connect to MongoDB
-connectDB();
-
-// Middleware
-app.use(express.json());
+// CORS Middleware
+// This will allow requests from your frontend development server
 app.use(cors({
-  origin: "*", // allow all, or specify your frontend URL
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  origin: "http://localhost:5173",
+  credentials: true,
 }));
-app.use(morgan('dev'));
 
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/tables', tableRoutes);
-app.use('/api/bookings', bookingRoutes);
+// Increase the request body size limit to handle base64 image uploads
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-// Default route
-app.get('/', (req, res) => {
-  res.send('🍽️ Restaurant Table Booking API is running');
+app.get("/", (req, res) => {
+  res.send("API is running...");
 });
 
-// Error handling
+app.use("/api/tables", tableRoutes);
+app.use("/api/bookings", bookingRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/auth", authRoutes);
+
+app.use(notFound);
 app.use(errorHandler);
 
-// Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

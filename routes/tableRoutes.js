@@ -1,18 +1,24 @@
+// routes/tableRoutes.js
 import express from "express";
-import { createTable, getTables, deleteTable, updateTable } from "../controllers/tableController.js";
+import { protect, admin } from "../middleware/authMiddleware.js";
+import {
+  createTable,
+  getTables,
+  getTableById,
+  updateTable,
+  deleteTable,
+} from "../controllers/tableController.js";
 
 const router = express.Router();
 
-// Create new table (Admin)
-router.post("/", createTable);
+router.post("/", protect, admin, createTable);
 
-// Get all tables (Public)
 router.get("/", getTables);
 
-// Update a table (Admin)
-router.put("/:id", updateTable);
+router.get("/:id", getTableById);
 
-// Delete a table (Admin)
-router.delete("/:id", deleteTable);
+router.put("/:id", protect, admin, updateTable);
 
-export default router; // ✅ ESM export
+router.delete("/:id", protect, admin, deleteTable);
+
+export default router;
