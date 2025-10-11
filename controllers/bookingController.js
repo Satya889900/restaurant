@@ -31,7 +31,7 @@ function pickBestOffer(offers = []) {
    @access Private/User
 ------------------------------------------------------- */
 export const createBooking = asyncHandler(async (req, res) => {
-  const { table: tableId, startTime, endTime } = req.body;
+  const { table: tableId, startTime, endTime, offerTitle } = req.body;
   if (!tableId) return res.status(400).json({ message: "Table is required" });
 
   const table = await Table.findById(tableId);
@@ -53,20 +53,23 @@ export const createBooking = asyncHandler(async (req, res) => {
   /* ------------------ Price & Offer Logic ------------------ */
   const basePrice = Number(table.price || 0);
   const applicableOffers = findApplicableOffers(table.offers || [], s);
-  const bestOffer = pickBestOffer(applicableOffers);
+  // Use the selected offer if provided, otherwise find the best one
+  const selectedOffer = offerTitle 
+    ? applicableOffers.find(o => o.title === offerTitle) 
+    : pickBestOffer(applicableOffers);
 
   let discount = 0;
   let appliedOffers = [];
 
-  if (bestOffer && bestOffer.discountPercent) {
-    discount = Math.round((basePrice * bestOffer.discountPercent) / 100);
+  if (selectedOffer && selectedOffer.discountPercent) {
+    discount = Math.round((basePrice * selectedOffer.discountPercent) / 100);
     appliedOffers.push({
-      title: bestOffer.title,
-      description: bestOffer.description,
-      discountPercent: bestOffer.discountPercent,
-      bank: bestOffer.bank,
-      validFrom: bestOffer.validFrom,
-      validTo: bestOffer.validTo,
+      title: selectedOffer.title,
+      description: selectedOffer.description,
+      discountPercent: selectedOffer.discountPercent,
+      bank: selectedOffer.bank,
+      validFrom: selectedOffer.validFrom,
+      validTo: selectedOffer.validTo,
     });
   }
 
