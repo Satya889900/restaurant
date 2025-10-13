@@ -5,6 +5,7 @@ import {
   getUserBookings,
   cancelBooking,
   updateBooking,
+  deleteBooking,
 } from "../controllers/bookingController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
@@ -18,7 +19,9 @@ router.route("/")
 
 router.route("/me").get(getUserBookings);
 
-router.route("/:id").put(updateBooking);
+router.route("/:id")
+  .put(updateBooking)
+  .delete(deleteBooking);
 router.route("/:id/cancel").post(cancelBooking);
 
 export default router;

@@ -11,33 +11,38 @@ import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
 
+// Connect MongoDB
 connectDB();
 
 const app = express();
 
-// CORS Middleware
-// This will allow requests from your frontend development server
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true,
-}));
+// Enable CORS for frontend
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
-// Increase the request body size limit to handle base64 image uploads
+// Body Parser
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
+// Root Route
 app.get("/", (req, res) => {
-  res.send("API is running...");
+  res.send("✅ API is running...");
 });
 
+// Routes
 app.use("/api/tables", tableRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 
+// Error handling middleware
 app.use(notFound);
 app.use(errorHandler);
 
+// Start Server
 const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

@@ -289,3 +289,26 @@ export const cancelBooking = asyncHandler(async (req, res) => {
     .then(() => console.log("📨 Booking cancellation sent to:", userEmail))
     .catch((err) => console.warn("⚠️ Cancellation email not sent:", err.message));
 });
+
+/* -------------------------------------------------------
+   @desc   Delete a booking permanently
+   @route  DELETE /api/bookings/:id
+   @access Private/User or Admin
+------------------------------------------------------- */
+export const deleteBooking = asyncHandler(async (req, res) => {
+  const booking = await Booking.findById(req.params.id);
+
+  if (!booking) {
+    return res.status(404).json({ message: "Booking not found" });
+  }
+
+  // Authorization: only owner or admin can delete
+  if (booking.user.toString() !== req.user.id && req.user.role !== "admin") {
+    return res.status(403).json({ message: "Not authorized to delete this booking" });
+  }
+
+  // Use deleteOne() for Mongoose v6+
+  await booking.deleteOne();
+
+  res.json({ message: "Booking permanently deleted" });
+});

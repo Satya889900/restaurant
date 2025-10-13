@@ -1,5 +1,7 @@
 import asyncHandler from "express-async-handler";
-import User from "../models/User.js";
+import User from "../models/userModel.js";
+import bcrypt from "bcryptjs";
+import generateToken from "../utils/generateToken.js";
 
 // @desc    Get user profile
 // @route   GET /api/users/profile
@@ -30,7 +32,8 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
     if (req.body.password) {
-      user.password = req.body.password;
+      const salt = await bcrypt.genSalt(10);
+      user.password = await bcrypt.hash(req.body.password, salt);
     }
 
     const updatedUser = await user.save();
@@ -40,6 +43,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       name: updatedUser.name,
       email: updatedUser.email,
       role: updatedUser.role,
+      token: generateToken(updatedUser._id), // ✅ Add token to the response
     });
   } else {
     res.status(404);

@@ -1,6 +1,6 @@
 // backend/routes/authRoutes.js
 import express from "express";
-import { register, login, getMe } from "../controllers/authController.js";
+import { register, login, getMe, forgotPassword, resetPassword } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -25,5 +25,19 @@ router.post("/login", login);
  * @access  Private
  */
 router.get("/me", protect, getMe);
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Request password reset (send OTP)
+ * @access  Public
+ */
+router.post("/forgot-password", forgotPassword);
+
+/**
+ * @route   POST /api/auth/reset-password
+ * @desc    Reset password with OTP
+ * @access  Public
+ */
+router.post("/reset-password", resetPassword);
 
 export default router;
