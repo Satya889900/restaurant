@@ -1,24 +1,22 @@
 // routes/tableRoutes.js
 import express from "express";
-import { protect, admin } from "../middleware/authMiddleware.js";
 import {
   createTable,
   getTables,
   getTableById,
   updateTable,
   deleteTable,
+  uploadTableImages,
 } from "../controllers/tableController.js";
+import { protect, admin } from "../middleware/authMiddleware.js";
+import upload from "../middleware/uploadMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", protect, admin, createTable);
+router.route("/").get(getTables).post(protect, admin, createTable);
 
-router.get("/", getTables);
+router.route("/upload-images").post(protect, admin, upload.array("images", 5), uploadTableImages);
 
-router.get("/:id", getTableById);
-
-router.put("/:id", protect, admin, updateTable);
-
-router.delete("/:id", protect, admin, deleteTable);
+router.route("/:id").get(getTableById).put(protect, admin, updateTable).delete(protect, admin, deleteTable);
 
 export default router;

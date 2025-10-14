@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import fs from "fs";
+import uploadRoutes from "./routes/upload.js";
 import connectDB from "./config/db.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
@@ -13,6 +15,12 @@ dotenv.config();
 
 // Connect MongoDB
 connectDB();
+
+// Ensure the uploads directory exists
+const uploadsDir = "./uploads";
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir);
+}
 
 const app = express();
 
@@ -38,6 +46,7 @@ app.use("/api/tables", tableRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api", uploadRoutes);
 
 // Error handling middleware
 app.use(notFound);

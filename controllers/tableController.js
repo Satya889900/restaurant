@@ -1,7 +1,60 @@
 // controllers/tableController.js
 import asyncHandler from "express-async-handler";
+import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
 import Table from "../models/Table.js";
 import Booking from "../models/Booking.js";
+
+/**
+ * Helper function to upload files to Cloudinary and clean up local files.
+ * @param {Array} files - Array of file objects from multer.
+ * @returns {Promise<string[]>} - A promise that resolves to an array of Cloudinary URLs.
+ */
+export const uploadImages = async (files = []) => {
+  const uploadPromises = files.map((file) => {
+    return new Promise((resolve, reject) => {
+      cloudinary.uploader.upload(
+        file.path,
+        { resource_type: "auto" },
+        (error, result) => {
+          // Clean up the local file regardless of the outcome
+          fs.unlink(file.path, (unlinkErr) => {
+            if (unlinkErr) {
+              // Log the unlink error, but don't fail the upload for it
+              console.error(`Failed to delete temporary file: ${file.path}`, unlinkErr);
+            }
+          });
+
+          if (error) return reject(error);
+          if (!result) return reject(new Error("Cloudinary upload failed to return a result."));
+          resolve(result.secure_url);
+        }
+      );
+    });
+  });
+
+  // This will now properly catch rejections from any of the upload promises
+  return Promise.all(uploadPromises);
+};
+
+// @desc   Upload images to Cloudinary and get URLs
+// @route  POST /api/tables/upload-images
+// @access Private/Admin
+export const uploadTableImages = asyncHandler(async (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ message: "No files uploaded." });
+  }
+
+  try {
+    // Use the helper function to upload files to Cloudinary
+    const imageUrls = await uploadImages(req.files);
+    res.status(200).json({ message: "Images uploaded successfully", urls: imageUrls });
+  } catch (error) {
+    console.error("Cloudinary Upload Error:", error);
+    // Pass a more specific error to the client
+    res.status(500).json({ message: error.message || "Error uploading images to Cloudinary." });
+  }
+});
 
 // helper: check if a menu item is available at a given JS Date (requestedTime)
 function isMenuItemAvailableAt(menuItem, requestedDate) {
@@ -45,7 +98,7 @@ export const createTable = asyncHandler(async (req, res) => {
     tableNumber,
     seats,
     isAvailable,
-    restaurantImages,
+    restaurantImages: restaurantImagesBody, // Rename to avoid conflict with the outer scope variable
     location,
     foodTypes,
     foodMenu,
@@ -59,6 +112,8 @@ export const createTable = asyncHandler(async (req, res) => {
   if (!tableNumber || !seats) {
     return res.status(400).json({ message: "Please provide table number & seats" });
   }
+
+  const restaurantImages = restaurantImagesBody || [];
 
   const tableExists = await Table.findOne({ tableNumber });
   if (tableExists) {
@@ -179,6 +234,11 @@ export const updateTable = asyncHandler(async (req, res) => {
     "offers",
     "notes",
   ];
+
+  // Explicitly handle restaurantImages to ensure it's always an array
+  if (req.body.restaurantImages !== undefined) {
+    table.restaurantImages = Array.isArray(req.body.restaurantImages) ? req.body.restaurantImages : [];
+  }
 
   updatable.forEach((field) => {
     if (req.body[field] !== undefined) {
