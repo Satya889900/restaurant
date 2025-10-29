@@ -13,8 +13,8 @@ const getUserProfile = asyncHandler(async (req, res) => {
     res.json({
       _id: user._id,
       name: user.name,
-      email: user.email,
-      role: user.role,
+      email: user.email,   
+      role: user.role,  
     });
   } else {
     res.status(404);
@@ -33,7 +33,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.email = req.body.email || user.email;
     if (req.body.password) {
       const salt = await bcrypt.genSalt(10);
-      user.password = await bcrypt.hash(req.body.password, salt);
+      user.password =  await bcrypt.hash(req.body.password, salt);
     }
 
     const updatedUser = await user.save();
