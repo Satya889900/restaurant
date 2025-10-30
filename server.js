@@ -10,6 +10,7 @@ import tableRoutes from "./routes/tableRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 
 dotenv.config();
 
@@ -47,6 +48,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api", uploadRoutes);
+app.use("/api/contact", contactRoutes);
 
 // Error handling middleware
 app.use(notFound);

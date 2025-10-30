@@ -28,6 +28,17 @@ const userSchema = new mongoose.Schema(
     passwordResetExpires: {
       type: Date,
     },
+    // Fields for public contact info
+    phone: {
+      type: String,
+    },
+    address: {
+      type: String,
+    },
+    isPublic: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true, // Adds createdAt and updatedAt fields
