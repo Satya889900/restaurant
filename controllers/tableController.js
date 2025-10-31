@@ -95,6 +95,7 @@ function isMenuItemAvailableAt(menuItem, requestedDate) {
 // @desc Create new table (Admin)
 export const createTable = asyncHandler(async (req, res) => {
   const {
+    restaurantName,
     tableNumber,
     seats,
     isAvailable,
@@ -109,18 +110,21 @@ export const createTable = asyncHandler(async (req, res) => {
     notes,
   } = req.body;
 
-  if (!tableNumber || !seats) {
-    return res.status(400).json({ message: "Please provide table number & seats" });
+  if (!restaurantName || !tableNumber || !seats) {
+    return res.status(400).json({ message: "Please provide restaurant name, table number & seats" });
   }
 
   const restaurantImages = restaurantImagesBody || [];
 
-  const tableExists = await Table.findOne({ tableNumber });
+  // A table number should be unique within the same restaurant
+  const tableExists = await Table.findOne({ tableNumber, restaurantName });
   if (tableExists) {
-    return res.status(400).json({ message: "Table number already exists" });
+    return res.status(400)
+      .json({ message: `Table number ${tableNumber} already exists for ${restaurantName}` });
   }
 
   const table = await Table.create({
+    restaurantName,
     tableNumber,
     seats,
     isAvailable: isAvailable !== undefined ? isAvailable : true,
@@ -219,8 +223,24 @@ export const updateTable = asyncHandler(async (req, res) => {
   const table = await Table.findById(req.params.id);
   if (!table) return res.status(404).json({ message: "Table not found" });
 
+  // If tableNumber or restaurantName is being changed, check for uniqueness
+  const newTableNumber = req.body.tableNumber !== undefined ? req.body.tableNumber : table.tableNumber;
+  const newRestaurantName = req.body.restaurantName !== undefined ? req.body.restaurantName : table.restaurantName;
+
+  if (req.body.tableNumber !== undefined || req.body.restaurantName !== undefined) {
+    const tableExists = await Table.findOne({
+      tableNumber: newTableNumber,
+      restaurantName: newRestaurantName,
+      _id: { $ne: req.params.id }, // Make sure it's not the same table we are updating
+    });
+    if (tableExists) {
+      return res.status(400).json({ message: `Table number ${newTableNumber} already exists for ${newRestaurantName}` });
+    }
+  }
+
   // Accept any of the fields (partial update)
   const updatable = [
+    "restaurantName",
     "tableNumber",
     "seats",
     "isAvailable",

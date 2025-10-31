@@ -112,12 +112,15 @@ export const createBooking = asyncHandler(async (req, res) => {
 
   /* ------------------ Email Confirmation ------------------ */
   const userEmail = req.user.email;
+
+  // Send confirmation to the user who booked
   sendEmail({
     to: userEmail,
     subject: "🍽️ Booking Confirmed",
     html: `
       <h2>🍽️ Booking Confirmed</h2>
-      <p><strong>Table:</strong> ${table.tableNumber}</p>
+      <p><strong>Restaurant:</strong> ${table.restaurantName}</p>
+      <p><strong>Table Number:</strong> ${table.tableNumber}</p>
       <p><strong>From:</strong> ${s.toLocaleString()}</p>
       <p><strong>To:</strong> ${e.toLocaleString()}</p>
       <p><strong>Price:</strong> ₹${basePrice}</p>
@@ -216,7 +219,7 @@ export const updateBooking = asyncHandler(async (req, res) => {
     subject: "🔄 Your Booking Has Been Updated",
     html: `
       <h2>🔄 Booking Updated</h2>
-      <p>Your booking for <strong>Table ${booking.table.tableNumber}</strong> has been successfully updated.</p>
+      <p>Your booking at <strong>${booking.table.restaurantName}</strong> for <strong>Table ${booking.table.tableNumber}</strong> has been successfully updated.</p>
       <p><strong>Old Time:</strong> ${oldStartTime}</p>
       <p><strong>New Time:</strong> ${s.toLocaleString()}</p>
       <p><strong>Price:</strong> ₹${basePrice}</p>
@@ -279,7 +282,8 @@ export const cancelBooking = asyncHandler(async (req, res) => {
     subject: "❌ Booking Cancelled",
     html: `
       <h2>❌ Booking Cancelled</h2>
-      <p><strong>Table:</strong> ${booking.table.tableNumber}</p>
+      <p><strong>Restaurant:</strong> ${booking.table.restaurantName}</p>
+      <p><strong>Table Number:</strong> ${booking.table.tableNumber}</p>
       <p><strong>From:</strong> ${booking.startTime.toLocaleString()}</p>
       <p><strong>To:</strong> ${booking.endTime.toLocaleString()}</p>
       <p><strong>Amount Charged:</strong> ₹${booking.finalPrice}</p>

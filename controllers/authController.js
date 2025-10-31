@@ -26,10 +26,15 @@ export const register = asyncHandler(async (req, res) => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
 
+  // Check if any admin user exists. If not, the first user becomes an admin.
+  const adminCount = await User.countDocuments({ role: "admin" });
+  const role = adminCount === 0 ? "admin" : "user";
+
   const user = await User.create({
     name,
     email,
     password: hashedPassword,
+    role,
   });
 
   if (user) {

@@ -53,10 +53,14 @@ const locationSchema = new mongoose.Schema(
 
 const tableSchema = new mongoose.Schema(
   {
+    restaurantName: {
+      type: String,
+      required: [true, "Restaurant name is required"],
+      trim: true,
+    },
     tableNumber: {
       type: Number,
       required: [true, "Table number is required"],
-      unique: true,
     },
     seats: {
       type: Number,
@@ -96,6 +100,9 @@ const tableSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Create a compound index to ensure tableNumber is unique per restaurant
+tableSchema.index({ restaurantName: 1, tableNumber: 1 }, { unique: true });
 
 const Table = mongoose.model("Table", tableSchema);
 export default Table;
