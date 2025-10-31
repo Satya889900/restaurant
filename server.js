@@ -1,5 +1,5 @@
 import express from "express";
-// import dotenv from "dotenv";
+import dotenv from "dotenv";
 import cors from "cors";
 import fs from "fs";
 import uploadRoutes from "./routes/upload.js";
@@ -12,7 +12,7 @@ import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import contactRoutes from "./routes/contactRoutes.js";
 
-// dotenv.config();
+dotenv.config();
 
 // Connect MongoDB
 connectDB();
@@ -55,7 +55,5 @@ app.use(notFound);
 app.use(errorHandler);
 
 // Start Server
-// const PORT = process.env.PORT || 5000;
-// app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-export default app;
-
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
