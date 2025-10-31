@@ -146,10 +146,6 @@ export const createTable = asyncHandler(async (req, res) => {
 export const getTables = asyncHandler(async (req, res) => {
   const { date, time, veg, foodTime } = req.query;
 
-  if (!date || !time) {
-    return res.status(400).json({ message: "Date and time are required" });
-  }
-
   // Parse requested slot/time
   const checkTime = new Date(`${date}T${time}`);
   if (isNaN(checkTime.getTime())) {
@@ -162,20 +158,27 @@ export const getTables = asyncHandler(async (req, res) => {
     { $set: { status: "completed" } }
   );
 
-  // Define booking window (2 hours)
-  const newBookingStartTime = checkTime;
-  const newBookingEndTime = new Date(newBookingStartTime.getTime() + 2 * 60 * 60 * 1000);
-
   const tables = await Table.find().sort("tableNumber");
 
-  // find overlapping bookings for the time window
-  const activeBookings = await Booking.find({
-    status: "booked",
-    startTime: { $lt: newBookingEndTime },
-    endTime: { $gt: newBookingStartTime },
-  }).select("table");
+  let bookedTableIds = [];
 
-  const bookedTableIds = activeBookings.map((b) => b.table.toString());
+  // Only check for bookings if date and time are provided
+  if (date && time) {
+    // Define booking window (2 hours)
+    const newBookingStartTime = checkTime;
+    const newBookingEndTime = new Date(
+      newBookingStartTime.getTime() + 2 * 60 * 60 * 1000
+    );
+
+    // find overlapping bookings for the time window
+    const activeBookings = await Booking.find({
+      status: "booked",
+      startTime: { $lt: newBookingEndTime },
+      endTime: { $gt: newBookingStartTime },
+    }).select("table");
+
+    bookedTableIds = activeBookings.map((b) => b.table.toString());
+  }
 
   const requestedFoodDate = foodTime ? new Date(`${date}T${foodTime}`) : checkTime;
   const vegFilter = veg === "true" || veg === true;
